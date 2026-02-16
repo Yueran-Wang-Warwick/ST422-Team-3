@@ -1,0 +1,150 @@
+---
+title: "Group Meeting Log"
+subtitle: "Evidence-based record of meetings and actions"
+author: ""
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+params:
+  input_csv: "../data/meeting_log.csv"
+output:
+  html_document:
+    toc: false
+    number_sections: false
+    df_print: paged
+    keep_md: true
+  md_document:
+    variant: gfm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+
+suppressPackageStartupMessages({
+  library(readr)
+  library(dplyr)
+  library(stringr)
+  library(lubridate)
+  library(knitr)
+})
+```
+
+## Inputs
+
+- Input CSV: `r params$input_csv`
+
+```{r load-and-clean}
+normalise_name <- function(x) {
+  x %>%
+    stringr::str_trim() %>%
+    stringr::str_to_lower() %>%
+    stringr::str_replace_all("[^a-z0-9]+", " ") %>%
+    stringr::str_squish()
+}
+
+required_canonical <- c(
+  "Date",
+  "Attendees",
+  "Duration",
+  "Agenda",
+  "Actions agreed",
+  "Owner for each action",
+  "Deadline",
+  "Status",
+  "Evidence pointer"
+)
+
+required_norm <- vapply(required_canonical, normalise_name, character(1))
+
+if (!file.exists(params$input_csv)) {
+  stop("Input CSV not found: ", params$input_csv)
+}
+
+raw <- readr::read_csv(params$input_csv, show_col_types = FALSE)
+raw_names_norm <- vapply(names(raw), normalise_name, character(1))
+
+name_map <- setNames(rep(NA_character_, length(required_canonical)), required_canonical)
+for (i in seq_along(required_canonical)) {
+  idx <- which(raw_names_norm == required_norm[i])
+  if (length(idx) == 1) name_map[i] <- names(raw)[idx]
+}
+
+missing <- required_canonical[is.na(name_map)]
+if (length(missing) > 0) {
+  stop(
+    "Missing required column(s): ",
+    paste(missing, collapse = ", "),
+    "\n\nRequired columns are:\n- ",
+    paste(required_canonical, collapse = "\n- ")
+  )
+}
+
+df <- raw %>%
+  dplyr::transmute(
+    Date = .data[[name_map[["Date"]]]],
+    Attendees = .data[[name_map[["Attendees"]]]],
+    Duration = .data[[name_map[["Duration"]]]],
+    Agenda = .data[[name_map[["Agenda"]]]],
+    `Actions agreed` = .data[[name_map[["Actions agreed"]]]],
+    `Owner for each action` = .data[[name_map[["Owner for each action"]]]],
+    Deadline = .data[[name_map[["Deadline"]]]],
+    Status = .data[[name_map[["Status"]]]],
+    `Evidence pointer` = .data[[name_map[["Evidence pointer"]]]]
+  )
+
+parse_any_date <- function(x) {
+  x_chr <- as.character(x)
+  parsed <- suppressWarnings(lubridate::parse_date_time(
+    x_chr,
+    orders = c("Ymd", "dmY", "mdY", "dmy", "ymd", "Y-m-d", "d/m/Y", "m/d/Y"),
+    tz = "UTC"
+  ))
+  ifelse(is.na(parsed), x_chr, format(as.Date(parsed), "%Y-%m-%d"))
+}
+
+df <- df %>%
+  mutate(
+    Date = parse_any_date(Date),
+    Deadline = parse_any_date(Deadline),
+    Status = str_to_lower(str_trim(as.character(Status))),
+    Status = case_when(
+      Status %in% c("completed", "complete", "done") ~ "completed",
+      Status %in% c("in progress", "inprogress", "in-progress", "ongoing") ~ "in progress",
+      Status %in% c("blocked", "stuck") ~ "blocked",
+      TRUE ~ Status
+    )
+  )
+
+valid_status <- c("completed", "in progress", "blocked")
+invalid_status <- setdiff(unique(df$Status), valid_status)
+invalid_status <- invalid_status[invalid_status != "" & !is.na(invalid_status)]
+```
+
+```{r status-warning, results='asis'}
+if (length(invalid_status) > 0) {
+  cat("**Note:** The following `Status` values are not in the recommended set (`completed`, `in progress`, `blocked`): ",
+      paste(invalid_status, collapse = ", "),
+      ". You may want to standardise these in the CSV.\n\n")
+}
+```
+
+## Meeting log (table)
+
+```{r table}
+df %>%
+  knitr::kable(
+    format = "pipe",
+    align = c("l","l","l","l","l","l","l","l","l")
+  )
+```
+
+## Quick summary (optional)
+
+```{r summary}
+df %>%
+  count(Status, name = "Count") %>%
+  arrange(match(Status, c("blocked", "in progress", "completed"))) %>%
+  knitr::kable(format = "pipe", align = c("l","r"))
+```

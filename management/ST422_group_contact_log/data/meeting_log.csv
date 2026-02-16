@@ -1,0 +1,4 @@
+﻿Date,Attendees,Duration,Agenda,Actions agreed,Owner for each action,Deadline,Status,Evidence pointer
+13/02/2026,A. Smith; B. Jones; C. Patel,45 min,Agree scope and success criteria,Draft decision statement; Set up repo; Assign roles,A. Smith; B. Jones; C. Patel,14/02/2026,in progress,minutes_2026-02-13.md
+14/02/2026,A. Smith; B. Jones,30 min,Data readiness check,Run missingness summary; Freeze data v1,B. Jones,15/02/2026,completed,PR#12
+15/02/2026,A. Smith; C. Patel,25 min,Draft exec summary skeleton,Write 1-page exec summary headings; Create evidence anchors,C. Patel,16/02/2026,blocked,Teams message link
