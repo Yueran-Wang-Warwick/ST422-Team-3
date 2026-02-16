@@ -1,0 +1,32 @@
+# Generated outputs (keep raw data, ignore rendered reports)
+outputs/
+management/outputs/
+
+# R files
+.Rhistory
+.RData
+.Rdata
+*.Rproj.user/
+.Rproj
+
+# RMarkdown cache
+*_cache/
+*_files/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sensitive data
+.env
+secrets.R
+
+# OS temp files
+*.log
