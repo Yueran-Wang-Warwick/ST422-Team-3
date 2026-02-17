@@ -1,0 +1,49 @@
+---
+title: "data-cleansing"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Set global options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE}
+# Load dataset
+load("")
+
+# Load libraries
+library()
+```
+
+```{r results='hide', message=FALSE, warning=FALSE}
+# Inspect variable types
+str(crccc2)
+
+summary(crccc2)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+

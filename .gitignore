@@ -30,3 +30,4 @@ secrets.R
 
 # OS temp files
 *.log
+.Rproj.user
