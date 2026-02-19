@@ -1,0 +1,72 @@
+---
+title: "data-cleansing"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Set global options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE}
+# Load libraries
+library(readr)
+library(dplyr)
+
+# Load dataset
+data_max <- read_csv("raw/max/cet_v2-1-0-0_maxtemp-seasonal-totals.csv", skip = 38)
+data_mean <- read_csv("raw/mean/cet_v2-1-0-0_meantemp-seasonal-totals.csv", skip = 38)
+data_min <- read_csv("raw/min/cet_v2-1-0-0_mintemp-seasonal-totals.csv", skip = 38)
+
+# Drop the last row
+data_max <- data_max %>% slice(-n())
+data_mean <- data_mean %>% slice(-n())
+data_min <- data_min %>% slice(-n())
+```
+
+```{r results='hide', message=FALSE, warning=FALSE}
+# Convert 'year' to integer
+data_max <- data_max |>
+  dplyr::mutate(year = as.integer(year))
+
+data_mean <- data_mean |>
+  dplyr::mutate(year = as.integer(year))
+
+data_min <- data_min |>
+  dplyr::mutate(year = as.integer(year))
+```
+
+```{r results='hide', message=FALSE, warning=FALSE}
+# Inspect variable again
+str(data_max)
+summary(data_max)
+
+str(data_mean)
+summary(data_mean)
+
+str(data_min)
+summary(data_min)
+```
+
+The winter value is missing for the first year of each dataset because winter spans two calendar years, and the survey begins on 1 January, so data from the preceding December are unavailable.
+
+```{r}
+# Export the clean datasets to CSV
+write_csv(data_max, "processed/data_max_cleaned.csv")
+write_csv(data_mean, "processed/data_mean_cleaned.csv")
+write_csv(data_min, "processed/data_min_cleaned.csv")
+```
+
+```{r}
+# Snapshot environment
+renv::snapshot()
+```
+
+```{r}
+
+```
+
