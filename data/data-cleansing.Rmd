@@ -55,14 +55,15 @@ summary(data_min)
 The winter value is missing for the first year of each dataset because winter spans two calendar years, and the survey begins on 1 January, so data from the preceding December are unavailable.
 
 ```{r}
-# Export the clean datasets
+# Export the clean datasets to CSV
 write_csv(data_max, "processed/data_max_cleaned.csv")
 write_csv(data_mean, "processed/data_mean_cleaned.csv")
 write_csv(data_min, "processed/data_min_cleaned.csv")
 ```
 
 ```{r}
-
+# Snapshot environment
+renv::snapshot()
 ```
 
 ```{r}
