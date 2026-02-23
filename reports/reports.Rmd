@@ -176,3 +176,8 @@ Decision 1 is covered by 30-year baseline shifts and persistence diagnostics.
 Decision 2 is covered by seasonal trend strength and variability behavior.  
 Decision 3 is covered by distributional evidence for reporting priorities.  
 To fully complete the brief, add a formal robustness section with alternative baseline windows and start-end sensitivity checks.
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+# Snapshot environment
+renv::snapshot()
+```
