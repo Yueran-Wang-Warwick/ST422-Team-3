@@ -1,5 +1,14 @@
-# Generated outputs (keep raw data, ignore rendered reports)
-outputs/
+# Generated outputs
+# Keep output folders and allow committed jpg artifacts
+outputs/*
+!outputs/figures/
+!outputs/tables/
+outputs/figures/*
+outputs/tables/*
+!outputs/figures/.gitkeep
+!outputs/tables/.gitkeep
+!outputs/figures/*.jpg
+!outputs/tables/*.jpg
 management/outputs/
 
 # R files
@@ -30,3 +39,4 @@ secrets.R
 
 # OS temp files
 *.log
+.Rproj.user
