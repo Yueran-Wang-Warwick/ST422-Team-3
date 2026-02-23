@@ -24,14 +24,7 @@ source(file.path(project_root, "src", "plot_baseline_shift_30y.R"))
 source(file.path(project_root, "src", "plot_warming_rate_decade.R"))
 source(file.path(project_root, "src", "plot_rolling_variability_sd.R"))
 source(file.path(project_root, "src", "plot_distribution_shift_period.R"))
-source(file.path(project_root, "src", "modeling_gls_ar1.R"))
-source(file.path(project_root, "src", "model_plot_baseline_shift_gls_ar1.R"))
-source(file.path(project_root, "src", "model_plot_long_run_trend_gls_ar1.R"))
-source(file.path(project_root, "src", "model_plot_error_dependence_gls_ar1.R"))
 source(file.path(project_root, "src", "table_utils.R"))
-source(file.path(project_root, "src", "table_model_data_overview.R"))
-source(file.path(project_root, "src", "table_model_shift_results.R"))
-source(file.path(project_root, "src", "table_model_trend_results.R"))
 ```
 
 # 1. Scope And Baseline Strategy
