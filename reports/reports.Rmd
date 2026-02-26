@@ -24,7 +24,14 @@ source(file.path(project_root, "src", "plot_baseline_shift_30y.R"))
 source(file.path(project_root, "src", "plot_warming_rate_decade.R"))
 source(file.path(project_root, "src", "plot_rolling_variability_sd.R"))
 source(file.path(project_root, "src", "plot_distribution_shift_period.R"))
+source(file.path(project_root, "src", "modeling_gls_ar1.R"))
+source(file.path(project_root, "src", "model_plot_baseline_shift_gls_ar1.R"))
+source(file.path(project_root, "src", "model_plot_long_run_trend_gls_ar1.R"))
+source(file.path(project_root, "src", "model_plot_error_dependence_gls_ar1.R"))
 source(file.path(project_root, "src", "table_utils.R"))
+source(file.path(project_root, "src", "table_model_data_overview.R"))
+source(file.path(project_root, "src", "table_model_shift_results.R"))
+source(file.path(project_root, "src", "table_model_trend_results.R"))
 ```
 
 # 1. Scope And Baseline Strategy
@@ -170,7 +177,196 @@ Decision 2 is covered by seasonal trend strength and variability behavior.
 Decision 3 is covered by distributional evidence for reporting priorities.  
 To fully complete the brief, add a formal robustness section with alternative baseline windows and start-end sensitivity checks.
 
-```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
-# Snapshot environment
-renv::snapshot()
+# 6. Modelling Section
+
+This section turns the visual patterns into numbers we can use for decisions.  
+In plain language, it answers three client questions:
+
+1. Are recent decades clearly warmer than the earlier baseline?
+2. Which seasons are warming fastest over the long run?
+3. How sure are we after accounting for year-to-year climate memory?
+
+## 6.1 Model choice in plain language
+
+We use **GLS with AR(1) errors**.
+
+Intuition:
+- Climate data are time ordered, and nearby years tend to move together.
+- AR(1) means "this year still remembers part of last year".
+- If we ignore that memory (plain OLS), uncertainty can look too small.
+- GLS AR(1) keeps the estimate and the uncertainty more realistic.
+
+What we fit:
+- 12 series in total: 4 seasons x 3 metrics (mean/min/max).
+- For each series, we fit two models:
+1. **Shift model** (`temp ~ period`): estimates how much warmer 1991-2020 is than 1961-1990.
+2. **Trend model** (`temp ~ year`): estimates long-run warming speed (degC per decade).
+
+## Step 1. Build The Modelling Dataset
+
+We use the same cleaned seasonal dataset from the EDA section.
+
+Why this setup:
+1. We keep **1879-2024** so mean/min/max are compared on a fair common period.
+2. We label each year into two baseline windows:
+- Historical: 1961-1990
+- Recent: 1991-2020
+
+```{r model-step-1-data}
+model_df <- prepare_model_data(
+  year_min = 1879,
+  year_max = 2024,
+  historical_start = 1961,
+  historical_end = 1990,
+  recent_start = 1991,
+  recent_end = 2020
+)
+
+model_overview_tbl <- make_table_model_data_overview(
+  model_df,
+  save_table = TRUE
+)
+
+knitr::kable(
+  model_overview_tbl,
+  caption = "Table 1. Baseline means by season. Cell format is historical -> recent (change). H = 1961-1990 and R = 1991-2020. All season-metric cells use 30 years per period."
+)
 ```
+
+Reading note.  
+Table 1 is the quick before-after check (before formal uncertainty modelling):
+- One row per season.
+- Each cell shows `historical -> recent (change)`.
+- Positive change means the recent period is warmer.
+
+Interpretation.  
+All seasons and all metrics already show positive warming deltas.  
+Spring is the largest overall increase; autumn is the smallest but still positive.  
+So the warming direction is already consistent before we move to formal interval estimates.
+
+## Step 2. Fit GLS AR(1) Models
+
+Now we estimate effect sizes with uncertainty:
+1. Shift model asks: "How much warmer is recent vs historical?"
+2. Trend model asks: "How fast is warming per decade?"
+
+Both models use AR(1) errors, so uncertainty reflects year-to-year dependence.
+
+```{r model-step-2-fit}
+model_results <- run_gls_models(model_df)
+
+model_shift_tbl <- make_table_model_shift_results(
+  model_results$shift,
+  save_table = TRUE,
+  historical_start = 1961,
+  historical_end = 1990,
+  recent_start = 1991,
+  recent_end = 2020
+)
+
+model_trend_tbl <- make_table_model_trend_results(
+  model_results$trend,
+  save_table = TRUE,
+  year_start = 1879,
+  year_end = 2024
+)
+
+knitr::kable(
+  model_shift_tbl,
+  caption = "Table 2. GLS AR(1) baseline shift summary by season and metric for 1991-2020 minus 1961-1990. Cell format is estimate [95% interval] in degC. Asterisk marks intervals that do not cross zero."
+)
+knitr::kable(
+  model_trend_tbl,
+  caption = "Table 3. GLS AR(1) long-run trend summary by season and metric for 1879-2024 in degC per decade. Cell format is estimate [95% interval]. Asterisk marks intervals that do not cross zero."
+)
+```
+
+Reading note.  
+How to read Table 2 and Table 3 in 10 seconds:
+1. Each cell is `estimate [95% interval]`.
+2. First number = best estimate.
+3. Brackets = plausible range given the model.
+4. Asterisk = interval does not cross zero (clear direction).
+5. Positive value = warming; larger positive value = bigger shift or faster trend.
+
+Interpretation.  
+For baseline shift, spring has the largest modelled change, especially for maximum temperature at +1.292 degC with interval [0.871, 1.712].  
+Summer and autumn shifts are also positive with intervals above zero in all three metrics.  
+Winter shifts are positive in point estimate but less certain because intervals cross zero for mean, min, and max.  
+For long-run trend, all 12 season-metric combinations are positive with intervals above zero, so long-run warming is statistically robust across all seasons and metrics.
+
+## Step 3. Visualise Model Outputs
+
+### Model Figure 1. GLS AR(1) Baseline Shift
+
+```{r model-fig-1, fig.width=11, fig.height=6.5}
+pm1 <- make_model_shift_plot(model_results$shift, save_plot = TRUE)
+pm1
+```
+
+Reading note.  
+Plain-language reading:
+1. Dot = best estimate of recent-minus-historical warming.
+2. Vertical line = uncertainty around that estimate.
+3. Entire line above zero = clear warming shift.
+
+### Model Figure 2. GLS AR(1) Long-Run Trend
+
+```{r model-fig-2, fig.width=11, fig.height=6.5}
+pm2 <- make_model_trend_plot(model_results$trend, save_plot = TRUE)
+pm2
+```
+
+Reading note.  
+Plain-language reading:
+1. Dot = warming speed per decade.
+2. Higher dot = faster warming.
+3. Entire interval above zero = long-run warming is clearly positive.
+
+### Model Figure 3. Estimated AR(1) Dependence
+
+```{r model-fig-3, fig.width=11, fig.height=6}
+pm3 <- make_model_rho_plot(model_results$rho, save_plot = TRUE)
+pm3
+```
+
+Reading note.  
+Plain-language reading:
+1. Bar height is AR(1) rho, a memory score for year-to-year dependence.
+2. Higher rho means stronger persistence.
+3. This is exactly why AR(1) is used.
+
+## Step 4. Integrated Modelling Interpretation
+
+Intuitive summary across the three model charts:
+1. Figure 1 answers "how big is the recent warming step-up?"
+2. Figure 2 answers "how fast is long-run warming?"
+3. Figure 3 answers "how much year-to-year memory is in the data?"
+
+Interpretation.  
+The model confirms a sustained warming shift between 1961-1990 and 1991-2020 for most season and metric combinations.  
+The strongest baseline shift appears in spring, with mean +1.063, min +0.833, and max +1.292 degC.  
+Summer and autumn also show clear positive shifts, for example summer mean +0.716 and autumn mean +0.606 degC.  
+Winter remains positive in point estimate, but uncertainty is wider and includes zero, so the winter shift is less certain in this specification.
+
+Long-run trend estimates are positive in every case and all 95% intervals stay above zero.  
+The fastest trends are in autumn, especially autumn max at +0.132 degC per decade and autumn mean at +0.125 degC per decade.  
+Spring trends are also strong, while summer and winter minimum trends are the slowest at +0.072 degC per decade.
+
+AR(1) dependence is not uniform by season.  
+It is strongest in winter and summer, moderate in autumn, and near zero in spring.  
+This pattern supports using GLS AR(1) instead of plain OLS because dependence is present and season specific.
+
+Decision-ready takeaways for Brief 6:
+1. **Decision 1 (is there a sustained shift, and how large?)**
+- Yes. Recent warming is material in most season-metric combinations.
+2. **Decision 2 (which seasons change most, and what type of change?)**
+- Spring shows the largest recent baseline jump.
+- Autumn shows the fastest long-run warming rates.
+3. **Decision 3 (what should we monitor and communicate?)**
+- Use season-specific reporting, not annual-only headlines.
+- Track mean/min/max together because impact and uncertainty differ by metric.
+
+Limitations to communicate clearly:
+1. This is a statistical trend-and-shift analysis, not causal attribution.
+2. Final sign-off should still include robustness checks (alternative baselines and start-end sensitivity), as flagged in Section 5.
