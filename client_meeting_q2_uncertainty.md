@@ -16,4 +16,4 @@ Extremely warm years toward the end of the record can inflate recent-period maxi
 
 Uncertainty 3: Long-run homogeneity and non-climatic influences
 
-Changes in observing practices (e.g. station/network characteristics, instrumentation, local environment) could induce non-climatic influence that affect the precise magnitude of long-run change. However, this issue is more likely affect the exact size of estimated shirts than to reverse the direction of change.
+Changes in observing practices (e.g. station/network characteristics, instrumentation, local environment) could induce non-climatic influence that affect the precise magnitude of long-run change. However, this issue is more likely affect the exact size of estimated shifts than to reverse the direction of change.
