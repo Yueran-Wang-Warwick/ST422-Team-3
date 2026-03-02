@@ -1,0 +1,76 @@
+---
+title: "report_structure"
+output: pdf_document
+date: "2026-03-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Portfolio Structure: HadCET Seasonal Temperature Analysis
+
+## Cover Page
+
+## Table of Contents
+
+## Contribution Declaration
+
+## Client Report
+
+### Executive Summary
+
+#### Decision Context and Thresholds
+
+#### Headline Findings on Seasonal Shifts
+
+#### Recommendations and Actionable Triggers
+
+#### Evidence Anchors
+
+#### Uncertainty and Decision Risk
+
+### Scope and Data Context
+
+#### Definition of Temporal Baselines
+
+#### Data Sources and Variables
+
+### Findings: Historical and Recent Temperature Changes
+
+#### Claim 1:
+
+#### Claim 2: 
+
+#### Claim 3: 
+
+### Recommendations for Internal Monitoring
+
+#### Metrics for Reporting
+
+#### Definition of Material Change Thresholds
+
+#### Next Analytical Steps
+
+## Technical Report
+
+### Problem Definition
+
+### Methodological Justification
+
+### Statistical Assumptions and Defense
+
+### Validation and Robustness Checks
+
+#### Model Diagnostics
+
+#### Evaluation of Outlier Influence
+
+### Traceability and Audit Narrative
+
+#### Mapping of Claims to Code and Outputs
+
+#### Reproducibility Environment
+
+## Appendices
+
