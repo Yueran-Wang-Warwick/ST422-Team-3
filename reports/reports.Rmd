@@ -1,6 +1,12 @@
 ---
-title: "Consultancy Report - Core Visualizations (Draft)"
+title: "Consultancy Report: Central England Temperature Change"
+subtitle: "Response to Brief 6 — HadCET Seasonal Analysis (1879--2024)"
 output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    extra_dependencies: ["float"]
   html_document:
     toc: true
     number_sections: true
@@ -9,9 +15,12 @@ output:
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(
-  echo = TRUE,
+  echo = FALSE,
   message = FALSE,
-  warning = FALSE
+  warning = FALSE,
+  fig.align = "center",
+  fig.pos = "H",
+  out.width = "\\textwidth"
 )
 
 project_root <- normalizePath("..", winslash = "/")
@@ -24,21 +33,42 @@ source(file.path(project_root, "src", "plot_baseline_shift_30y.R"))
 source(file.path(project_root, "src", "plot_warming_rate_decade.R"))
 source(file.path(project_root, "src", "plot_rolling_variability_sd.R"))
 source(file.path(project_root, "src", "plot_distribution_shift_period.R"))
+source(file.path(project_root, "src", "modeling_gls_ar1.R"))
+source(file.path(project_root, "src", "model_plot_baseline_shift_gls_ar1.R"))
+source(file.path(project_root, "src", "model_plot_long_run_trend_gls_ar1.R"))
+source(file.path(project_root, "src", "model_plot_error_dependence_gls_ar1.R"))
 source(file.path(project_root, "src", "table_utils.R"))
+source(file.path(project_root, "src", "table_model_data_overview.R"))
+source(file.path(project_root, "src", "table_model_shift_results.R"))
+source(file.path(project_root, "src", "table_model_trend_results.R"))
 ```
 
-# 1. Scope And Baseline Strategy
+\newpage
 
-This report is structured around the three decision questions in Brief 6.  
-The primary effect-size baseline is a 30-year comparison of 1961-1990 versus 1991-2020.  
-Long-run context uses the full comparable period for mean, min, and max from 1879 to 2024.  
-This setup lets us quantify recent shift size while still separating long-run change from short-term seasonal noise.
+# Introduction
 
-# 2. Decision 1: Is There A Sustained Shift And How Large Is It
+This report uses the Met Office HadCET seasonal series (v2.1.0.0) to address the three decisions in Brief 6. The dataset covers seasonal mean temperature from 1659 onward and seasonal minimum and maximum from 1878 onward, representing the Midlands region.
 
-## Figure 3: 30-Year Baseline Shift
+The baseline strategy compares two 30-year windows: 1961--1990 (historical) against 1991--2020 (recent). All three metrics are analysed over the common period 1879--2024. Part I uses visualisations to establish the pattern; Part II fits a GLS AR(1) model to add formal uncertainty estimates.
 
-```{r fig-3, fig.width=11, fig.height=6.5}
+# Part I: Visual Evidence
+
+## Decision 1 -- Is There a Sustained Warming Shift, and How Large Is It?
+
+We approach this in two steps: first checking whether any warming is genuinely persistent over time, then measuring how large the recent step-up is.
+
+To check persistence, at each year we compute the 30-year running average and track how far it sits above where it started in the late 19th century. Any line above zero means conditions are warmer than at the start of the record.
+
+```{r fig-2, fig.width=9, fig.height=6, fig.cap="Shift in the running 30-year average relative to the late 19th century baseline, by season and metric. Lines above zero mean the recent average is warmer than at the start of the record."}
+p2 <- make_figure_2(save_plot = TRUE, window = 30)
+p2
+```
+
+All four seasons have been above zero since the early 2000s at the latest, and most have been climbing steadily since the 1980s. The consistent upward direction across all 12 panels rules out a single unusual period driving the result.
+
+With persistence confirmed, the next chart measures the step-up directly. Each bar is the 1991--2020 period mean minus the 1961--1990 mean.
+
+```{r fig-3, fig.width=8, fig.height=4.5, fig.cap="Difference in period mean temperature between 1991--2020 and 1961--1990, by season and metric. Every bar above zero indicates warming."}
 p3 <- make_figure_3(
   save_plot = TRUE,
   historical_start = 1961, historical_end = 1990,
@@ -47,100 +77,35 @@ p3 <- make_figure_3(
 p3
 ```
 
-Reading note.  
-This is the easiest before-versus-after chart.  
-Each bar equals recent 30 years minus earlier 30 years.  
-Bars above zero mean warmer recent conditions.  
-Taller bars mean a bigger shift.
+Every bar is positive. Spring maximum has the largest shift at around +1.28 degC; autumn sits at the lower end at around +0.60 degC. Notably, within every season, maximum temperature shifts more than minimum -- meaning warming is more pronounced at the upper end of each season's range than at the lower end. This is worth flagging directly: Brief 6 raised the possibility that minimum temperatures might be rising faster, but the data show the opposite pattern.
 
-Interpretation.  
-All shifts are positive for 1991-2020 minus 1961-1990.  
-Values range from +0.596 to +1.276 degC across season and metric pairs.  
-The largest mean shift is in spring (+1.052 degC), followed by winter (+0.808), summer (+0.744), and autumn (+0.615).  
-Spring maximum is also the largest maximum shift (+1.276 degC).  
-Mean, minimum, and maximum all move in the same direction, which supports a robust warming signal.
+## Decision 2 -- Which Seasons Are Changing Most, and What Kind of Change Is It?
 
-## Figure 2: Rolling Mean Anomaly
+Decision 2 asks whether the change looks like a gradual trend, a step-change, or shifting variability -- three different things for planning purposes.
 
-```{r fig-2, fig.width=12, fig.height=8}
-p2 <- make_figure_2(save_plot = TRUE, window = 30)
-p2
-```
+We start with the full trajectories to see the shape of change before summarising it into rates.
 
-Reading note.  
-Think of this as a long-memory warming signal.
-The dashed zero line is the old climate reference.  
-If a line stays above zero for many years, the warming shift is persistent.
-
-Interpretation.  
-By 2024, all season and metric combinations are positive relative to their early rolling baseline.  
-The largest end-of-series anomalies are winter max (+1.726 degC), autumn max (+1.634 degC), and spring max (+1.622 degC).  
-Summer min is also clearly positive (+0.977 degC).  
-This shows that warming is sustained over decades rather than driven by isolated years.
-
-# 3. Decision 2: Which Seasons Change Most And What Type Of Change Is It
-
-## Figure 1: Seasonal Trajectories
-
-```{r fig-1, fig.width=12, fig.height=8}
+```{r fig-1, fig.width=9, fig.height=6, fig.cap="Annual temperature values (faint) and smooth long-run trends (bold) by season and metric, 1879--2024."}
 p1 <- make_figure_1(save_plot = TRUE)
 p1
 ```
 
-Reading note.  
-Each panel is one season.  
-Faint lines are noisy year-to-year movement.  
-Smooth lines show the underlying direction.  
-If smooth lines keep rising from left to right, that season is warming in a structural way.
+All four seasons show upward trends. Winter and summer have a visible mid-century plateau from the 1950s to early 1980s, followed by a sharp upturn; spring and autumn rise more gradually throughout. This isn't a clean linear climb -- it's a slow rise that steepened from the late 1980s onward. Formal rate estimates are in Part II.
 
-Interpretation.  
-All four seasons show clear long-run warming in mean, minimum, and maximum temperature.  
-The biggest visual gap between early and recent periods appears in spring and autumn.  
-Summer also warms, but the mean and minimum series rise less sharply.  
-A mid-century pause appears in several panels, followed by renewed warming from the late 1980s to 1990s.
+A warmer average doesn't automatically mean more erratic conditions. The next chart checks whether year-to-year spread has changed as well.
 
-## Figure 4: Warming Rate Per Decade
-
-```{r fig-4, fig.width=11, fig.height=6.5}
-p4 <- make_figure_4(save_plot = TRUE, year_min = 1879, year_max = 2024)
-p4
-```
-
-Reading note.  
-Each point is warming speed per decade.  
-Higher points mean faster warming.  
-The vertical line around each point is uncertainty.  
-If the full line stays above zero, warming is statistically clear.
-
-Interpretation.  
-Estimated trends are positive in all 12 season and metric combinations, from +0.069 to +0.132 degC per decade.  
-The 95% confidence intervals are above zero for every estimate, for example autumn max +0.132 [0.099, 0.165] and winter min +0.069 [0.021, 0.118].  
-Maximum temperature trends are generally steeper than minimum temperature trends, especially in winter and summer.
-
-## Figure 5: Rolling Variability
-
-```{r fig-5, fig.width=12, fig.height=8}
+```{r fig-5, fig.width=9, fig.height=6, fig.cap="Rolling 30-year standard deviation by season and metric. Rising lines indicate increasing spread; falling lines indicate more consistent conditions."}
 p5 <- make_figure_5(save_plot = TRUE, window = 30)
 p5
 ```
 
-Reading note.  
-This figure is about wobble, not average level.  
-It tracks rolling 30-year standard deviation.  
-Rising lines mean bigger year-to-year swings.  
-Falling lines mean calmer variation.
+Winter and summer maximum variability have declined in recent decades -- those seasons are warmer on average but also more consistent year to year. Spring and autumn variability is similar to or slightly above the 1961--1990 level. Trend and variability don't move together, so they need to be tracked separately.
 
-Interpretation.  
-Variability changes are season dependent rather than uniform.  
-Comparing 1991-2020 with 1961-1990, spring and autumn variability rise across metrics, with SD increases of roughly +0.136 to +0.267.  
-Winter and summer mostly decline or stay flat, for example winter min -0.432, summer max -0.356, and summer min +0.008.  
-This means level shift and volatility shift are not the same pattern.
+## Decision 3 -- What Does the Distribution Evidence Tell Us About Monitoring?
 
-# 4. Decision 3: Monitoring And Communication
+For monitoring design, averages and rates alone aren't enough -- it helps to see how the full spread of conditions has shifted. The chart below compares the complete distribution in 1961--1990 (blue) and 1991--2020 (orange).
 
-## Figure 6: Distribution Shift By Period
-
-```{r fig-6, fig.width=12, fig.height=8.5}
+```{r fig-6, fig.width=9, fig.height=6.5, fig.cap="Full temperature distributions for 1961--1990 (blue) and 1991--2020 (orange) by season and metric. Higher position means a warmer distribution; wider shape means greater spread."}
 p6 <- make_figure_6(
   save_plot = TRUE,
   historical_start = 1961, historical_end = 1990,
@@ -149,28 +114,83 @@ p6 <- make_figure_6(
 p6
 ```
 
-Reading note.  
-This compares full temperature shapes, not only averages.  
-If the recent box and violin sit higher, typical conditions are warmer.  
-If the shape is wider, spread is larger.  
-This helps when deciding what to monitor beyond the mean.
+Every orange distribution sits higher than the blue. The largest median shifts are in summer maximum and spring maximum, both near or above +1.4 degC. Winter maximum narrows in the recent period while spring and autumn widen slightly, consistent with the variability picture above.
 
-Interpretation.  
-Recent distributions shift upward relative to 1961-1990 in every season and metric, with median increases from +0.575 to +1.445 degC.  
-The largest median shifts occur in summer max (+1.445), spring max (+1.355), and spring mean (+1.115).  
-Spread changes are mixed by season.  
-Several winter and summer series narrow, while spring and autumn widen.  
-Monitoring should track both central level and season-specific spread.
+For a practical monitoring framework, three things follow from this. First, mean and maximum should both be reported -- minimum alone understates the warming signal. Second, spring and summer maximum are the highest-priority series to watch, given they show the largest distributional shifts and are most relevant to heat-related planning. Third, for defining "material change", a reasonable starting point is to use the 1991--2020 distribution as the current reference baseline and treat a season falling above the 90th percentile of that distribution as a trigger for review. Spring and autumn will need a wider tolerance band than winter and summer, given their higher year-to-year spread in the recent period.
 
-# 5. Alignment With Brief 6
+# Part II: Statistical Modelling
 
-Current sections already address the core brief requirements.  
-Decision 1 is covered by 30-year baseline shifts and persistence diagnostics.  
-Decision 2 is covered by seasonal trend strength and variability behavior.  
-Decision 3 is covered by distributional evidence for reporting priorities.  
-To fully complete the brief, add a formal robustness section with alternative baseline windows and start-end sensitivity checks.
+Part I shows clear patterns visually, but can't quantify uncertainty or correct for a structural feature of climate data: nearby years aren't independent. A warm year tends to be followed by another warm year, which makes standard OLS intervals too narrow. We use GLS with AR(1) errors to correct for this, fitting two models per series: a shift model comparing the two 30-year periods, and a trend model estimating the long-run rate over 1879--2024.
 
-```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
-# Snapshot environment
-renv::snapshot()
+## Baseline Shift Results
+
+The table and figure below show the formal AR(1)-corrected shift estimates. Intervals that don't include zero indicate a clear positive shift.
+
+```{r model-fit, include=FALSE}
+model_df <- prepare_model_data(
+  year_min = 1879,
+  year_max = 2024,
+  historical_start = 1961,
+  historical_end = 1990,
+  recent_start = 1991,
+  recent_end = 2020
+)
+
+model_results <- run_gls_models(model_df)
+
+model_shift_tbl <- make_table_model_shift_results(
+  model_results$shift,
+  save_table = TRUE,
+  historical_start = 1961,
+  historical_end = 1990,
+  recent_start = 1991,
+  recent_end = 2020
+)
+
+model_trend_tbl <- make_table_model_trend_results(
+  model_results$trend,
+  save_table = TRUE,
+  year_start = 1879,
+  year_end = 2024
+)
 ```
+
+```{r model-shift-table}
+knitr::kable(
+  model_shift_tbl,
+  caption = "GLS AR(1) baseline shift estimates (1991--2020 minus 1961--1990). Cell format is estimate [95\\% interval] in degC. Asterisk marks intervals that don't include zero."
+)
+```
+
+```{r model-fig-1, fig.width=8, fig.height=4.5, fig.cap="GLS AR(1) baseline shift estimates with 95\\% intervals. Intervals entirely above zero indicate a clear positive shift."}
+pm1 <- make_model_shift_plot(model_results$shift, save_plot = TRUE)
+pm1
+```
+
+Spring is the clearest case: all three metrics show intervals entirely above zero, with spring maximum at +1.29 [0.87, 1.71] degC. Summer and autumn are also clear. Winter is positive throughout but intervals include zero for most metrics, reflecting higher year-to-year noise rather than genuine ambiguity about direction.
+
+## Long-Run Warming Rate Results
+
+The trend model uses the full 1879--2024 record rather than comparing two specific windows, making it less sensitive to the choice of baseline years.
+
+```{r model-fig-2, fig.width=8, fig.height=4.5, fig.cap="GLS AR(1) long-run warming rate estimates (degC per decade, 1879--2024) with 95\\% intervals."}
+pm2 <- make_model_trend_plot(model_results$trend, save_plot = TRUE)
+pm2
+```
+
+```{r model-trend-table}
+knitr::kable(
+  model_trend_tbl,
+  caption = "GLS AR(1) long-run warming rate estimates by season and metric, 1879--2024, in degC per decade. Asterisk marks intervals that don't include zero."
+)
+```
+
+Every one of the 12 series has an interval entirely above zero -- including winter, which was less certain in the shift model. Autumn is fastest at +0.12 to +0.13 degC per decade; winter and summer minimum are slowest at around +0.07 to +0.09. The AR(1) correction makes the most difference for winter and summer, where year-to-year correlation is strongest (rho around 0.21--0.22 for winter), widening their intervals relative to a plain OLS approach.
+
+# Decision Summary
+
+**Decision 1.** Yes, there is a sustained and material warming shift. All seasons have been above their late 19th century levels since at least the early 2000s, with acceleration from the late 1980s. The step-up is +0.60 to +1.28 degC depending on season and metric. GLS modelling confirms this is statistically clear for spring, summer, and autumn; the long-run trend model confirms it for winter as well.
+
+**Decision 2.** Spring has the largest recent baseline shift and autumn has the fastest long-run warming rate. The change is a slow rise that steepened from the late 1980s -- neither a clean linear trend nor a single step-change. Contrary to the expectation that minimum temperatures might be rising faster, maximum temperature consistently shifts more than minimum across all seasons, so maximum is the more sensitive indicator. Variability has declined in winter and summer but stayed similar or slightly higher in spring and autumn, so level and variability need to be tracked independently.
+
+**Decision 3.** We recommend reporting both mean and maximum temperature by season, with minimum as a secondary indicator. Spring and summer maximum are the highest-priority series given their largest distributional shifts. A working definition of material change is a season falling above the 90th percentile of its 1991--2020 distribution; spring and autumn should carry a slightly wider tolerance than winter and summer given their higher recent spread. The 1991--2020 period provides the appropriate reference baseline for all thresholds.
