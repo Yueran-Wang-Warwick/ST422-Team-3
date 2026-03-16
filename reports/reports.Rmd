@@ -41,6 +41,9 @@ source(file.path(project_root, "src", "table_utils.R"))
 source(file.path(project_root, "src", "table_model_data_overview.R"))
 source(file.path(project_root, "src", "table_model_shift_results.R"))
 source(file.path(project_root, "src", "table_model_trend_results.R"))
+source(file.path(project_root, "src", "model_sensitivity_baselines.R"))
+source(file.path(project_root, "src", "model_sensitivity_periods.R"))
+source(file.path(project_root, "src", "model_sensitivity_recent_years.R"))
 ```
 
 \newpage
@@ -133,7 +136,8 @@ model_df <- prepare_model_data(
   historical_start = 1961,
   historical_end = 1990,
   recent_start = 1991,
-  recent_end = 2020
+  recent_end = 2020,
+  project_root = project_root
 )
 
 model_results <- run_gls_models(model_df)
@@ -194,3 +198,123 @@ Every one of the 12 series has an interval entirely above zero -- including wint
 **Decision 2.** Spring has the largest recent baseline shift and autumn has the fastest long-run warming rate. The change is a slow rise that steepened from the late 1980s -- neither a clean linear trend nor a single step-change. Contrary to the expectation that minimum temperatures might be rising faster, maximum temperature consistently shifts more than minimum across all seasons, so maximum is the more sensitive indicator. Variability has declined in winter and summer but stayed similar or slightly higher in spring and autumn, so level and variability need to be tracked independently.
 
 **Decision 3.** We recommend reporting both mean and maximum temperature by season, with minimum as a secondary indicator. Spring and summer maximum are the highest-priority series given their largest distributional shifts. A working definition of material change is a season falling above the 90th percentile of its 1991--2020 distribution; spring and autumn should carry a slightly wider tolerance than winter and summer given their higher recent spread. The 1991--2020 period provides the appropriate reference baseline for all thresholds.
+
+# Part III: Robustness Checks
+## Baseline Sensitivity
+
+To check whether the estimated warming shift depends on the chosen baseline, we repeated the analysis using several alternative 30-year period comparisons.
+
+```{r}
+baseline_sensitivity_results <- run_baseline_sensitivity()
+
+baseline_summary_tbl <- baseline_sensitivity_results %>%
+  mutate(
+    positive_shift = shift > 0,
+    ci_above_zero = lower > 0
+  ) %>%
+  group_by(spec_label) %>%
+  summarise(
+    n_series = n(),
+    n_positive = sum(positive_shift, na.rm = TRUE),
+    n_ci_above_zero = sum(ci_above_zero, na.rm = TRUE),
+    mean_shift = mean(shift, na.rm = TRUE),
+    .groups = "drop"
+  )
+baseline_summary_tbl
+```
+
+When comparing earlier periods (1931–1960 vs 1961–1990), the warming signal is weak and statistically uncertain. This is expected because most of the warming in the HadCET record occurs after the late twentieth century. However, later period comparisons give a much clearer picture. For both 1951–1980 vs 1981–2010 and 1961–1990 vs 1991–2020, all twelve season–metric series show positive shifts, and many intervals lie clearly above zero. The magnitude of the shift also increases for the more recent comparison, indicating that warming has become more pronounced in the later part of the record.
+
+```{r}
+max_min_summary <- baseline_sensitivity_results %>%
+  filter(metric %in% c("min", "max")) %>%
+  select(spec_label, season, metric, shift) %>%
+  tidyr::pivot_wider(
+    names_from = metric,
+    values_from = shift
+  ) %>%
+  mutate(max_gt_min = max > min) %>%
+  group_by(spec_label) %>%
+  summarise(
+    n_seasons = n(),
+    n_max_gt_min = sum(max_gt_min, na.rm = TRUE),
+    .groups = "drop"
+  )
+max_min_summary
+```
+
+Importantly, the pattern that maximum temperature shifts more strongly than minimum temperature remains stable across all baseline definitions. This supports the interpretation that warming is particularly visible at the upper end of seasonal temperature distributions.
+
+Overall, these checks indicate that the main findings are robust: the recent decades exhibit a clear and material warming shift, and the stronger signal in maximum temperatures is not sensitive to the baseline choice.
+
+## Time-period Sensitivity
+
+To check whether the trend results depend on where the record begins, the trend model was re-estimated using alternative sample periods (1879–2024, 1900–2024, and 1950–2024).
+
+```{r}
+period_sensitivity_results <- run_period_sensitivity()
+
+period_summary_tbl <- period_sensitivity_results %>%
+  mutate(
+    positive_trend = trend_decade > 0,
+    ci_above_zero = lower > 0
+  ) %>%
+  group_by(period_label) %>%
+  summarise(
+    n_series = n(),
+    n_positive = sum(positive_trend),
+    n_ci_above_zero = sum(ci_above_zero),
+    mean_trend = mean(trend_decade),
+    .groups = "drop"
+  )
+period_summary_tbl
+```
+
+Across all specifications, every season–metric series shows a positive warming trend, and nearly all confidence intervals remain entirely above zero. This indicates that the warming conclusion is not driven by the earliest part of the record.
+
+The estimated magnitude of warming increases when the analysis focuses on more recent periods. In particular, the mean warming rate rises from about 0.10 °C per decade for the full sample to about 0.20 °C per decade when the analysis begins in 1950. This pattern suggests that warming has accelerated in the later part of the record.
+
+Overall, these checks confirm that the observed warming trend is robust to the choice of time period.
+
+## Recent-Years Sensitivity
+
+To check whether the warming trend is being driven mainly by the most recent unusually warm years, the trend model was re-estimated after excluding 2024 and, separately, after excluding the most recent five years (2020–2024).
+
+```{r}
+recent_sensitivity_results <- run_recent_years_sensitivity()
+
+recent_summary_tbl <- recent_sensitivity_results %>%
+  mutate(
+    positive_trend = trend_decade > 0,
+    ci_above_zero = lower > 0
+  ) %>%
+  group_by(sample_label) %>% 
+  summarise(
+    n_series = n(),
+    n_positive = sum(positive_trend, na.rm = TRUE),
+    n_ci_above_zero = sum(ci_above_zero, na.rm = TRUE),
+    mean_trend = mean(trend_decade, na.rm = TRUE),
+    .groups = "drop"
+  )
+recent_summary_tbl
+```
+
+Across all three specifications, all twelve season--metric series retain positive warming trends, and all confidence intervals remain entirely above zero. Excluding 2024, or excluding the most recent five years, reduces the estimated mean trend only slightly, from about 0.105 to 0.096 °C per decade.
+
+This indicates that the warming signal is not driven solely by the latest extreme warm years. Instead, it reflects a persistent long-run increase that remains clearly visible even after those recent observations are removed.
+
+## Robustness Checks Summary
+
+Overall, the robustness checks point to the same conclusion. The estimated warming signal remains positive under alternative baseline definitions, alternative sample periods, and after excluding the most recent extreme warm years. While the exact magnitudes vary across specifications, the direction, persistence, and broad seasonal pattern of warming remain stable.
+
+
+
+
+
+
+
+
+
+
+
+

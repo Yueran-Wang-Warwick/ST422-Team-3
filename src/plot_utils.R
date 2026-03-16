@@ -21,22 +21,23 @@ season_order <- c("winter", "spring", "summer", "autumn", "annual")
 load_hadcet_long <- function(
   include_annual = TRUE,
   year_min = 1879,
-  year_max = 2024
+  year_max = 2024,
+  project_root = "."
 ) {
   mean_df <- readr::read_csv(
-    file.path("data", "processed", "data_mean_cleaned.csv"),
+    file.path(project_root, "data", "processed", "data_mean_cleaned.csv"),
     show_col_types = FALSE
   ) %>%
     mutate(metric = "mean")
 
   min_df <- readr::read_csv(
-    file.path("data", "processed", "data_min_cleaned.csv"),
+    file.path(project_root, "data", "processed", "data_min_cleaned.csv"),
     show_col_types = FALSE
   ) %>%
     mutate(metric = "min")
 
   max_df <- readr::read_csv(
-    file.path("data", "processed", "data_max_cleaned.csv"),
+    file.path(project_root, "data", "processed", "data_max_cleaned.csv"),
     show_col_types = FALSE
   ) %>%
     mutate(metric = "max")

@@ -9,9 +9,10 @@ prepare_model_data <- function(
   historical_start = 1961,
   historical_end = 1990,
   recent_start = 1991,
-  recent_end = 2020
+  recent_end = 2020,
+  project_root = "."
 ) {
-  load_hadcet_long(include_annual = FALSE, year_min = year_min, year_max = year_max) %>%
+  load_hadcet_long(include_annual = FALSE, year_min = year_min, year_max = year_max, project_root = project_root) %>%
     mutate(
       period = dplyr::case_when(
         year >= historical_start & year <= historical_end ~ "historical",
