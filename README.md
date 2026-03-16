@@ -16,12 +16,15 @@ minimum and maximum temperature series (v2.1.0.0).
 4. Baseline summary of data characteristics
 5. Claim
 6. Data and approach (plain language)
-7. Evidence
-   - Table 1 + interpretation
-   - Visualisation 1 + interpretation
-   - Visualisation 2 + interpretation
-8. Uncertainty and limitations (1-3 items, each with impact)
-9. Recommendation and next steps
+7. Part I: Visual Evidence
+   - Decision 1 + Interpretation
+   - Decision 2 + Interpretation
+   - Decision 3 + Interpretation
+8. Part II: Statistical Modelling
+   - Baseline Shift Results 
+   - Long-Run Warming Rates Results
+9. Decision Summaries
+
 
 Outputs are written to:
 - outputs/tables/
@@ -33,18 +36,21 @@ For more information on those please refer to the README.md present in that fold
 
 ## Quick start
 
-To be filled in. 
+
 
 ## Dataset selection
 
-To be decided. 
-
+The report uses the cleaned and processed dataset present in the 'data/processed/' 
+folder. There are three files.
+- 'data_max_cleaned.csv'
+- 'data_min_cleaned.csv'
+- 'data_mean_cleaned.csv'
 
 
 
 ## Included datasets
 
-The following were copied into data/raw/ when this repo was generated:
+The following were copied into 'data/raw/' when this repo was generated:
 - 'min/cet_v2-1-0-0_mintemp-seasonal-ranked.csv'
 - 'min/cet_v2-1-0-0_mintemp-seasonal-totals.csv'
 - 'mean/cet_v2-1-0-0_meantemp-seasonal-ranked.csv'
