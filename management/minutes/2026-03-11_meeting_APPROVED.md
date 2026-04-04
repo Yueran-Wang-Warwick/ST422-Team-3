@@ -17,8 +17,8 @@ output:
 ## 1. Attendees
 
 -   Alex Zheng (present)
--   Lewis Parry (present)
--   Yueran Wang (apologies)
+-   Lewis Parry (apologies)
+-   Yueran Wang (present)
 -   Yunting Chen (present)
 -   Priya Kumar (present)
 -   Shan Xue (present)
