@@ -69,7 +69,7 @@ ST422_Personal_Portfolio_Yueran_Wang/
 `-- .Rhistory
 ```
 
-## Determinism
+## No Randomness in Workflow
 
 The workflow is deterministic. It does not use random sampling, simulation, bootstrap methods, MCMC, or random initialisation. The GLS, OLS, AR(1), AR(2), diagnostics, threshold tables, and all report figures are deterministic numerical or graphical outputs conditional on unchanged data, code, and package versions. No random seed is required for the main analytical pipeline.
 
