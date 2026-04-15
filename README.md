@@ -85,15 +85,8 @@ ST422_Personal_Portfolio/
   |-- processed/
   |   |-- data_mean_cleaned.csv
   |   |-- data_min_cleaned.csv
-  |   |-- data_max_cleaned.csv
-  |   |-- features/
-  |   |   |-- hadcet_long_with_flags.csv
-  |   |   `-- hadcet_wide_with_flags.csv
-  |   `-- qa/
-  |       |-- quality_summary.csv
-  |       |-- missingness_summary.csv
-  |       |-- outlier_summary.csv
-  |       `-- outlier_review.csv
+  |   `-- data_max_cleaned.csv
+  |  
   |-- src/
   |   |-- models/
   |   |   |-- model_plot_baseline_shift_gls_ar1.R
@@ -128,7 +121,7 @@ ST422_Personal_Portfolio/
   |   `-- library/
   |-- renv.lock
   |-- README.md
-  |-- .gitignore
+  `-- .gitignore
  
 
 ```
@@ -137,15 +130,13 @@ ST422_Personal_Portfolio/
 
 Run the project from the repository root.
 
-1. Open the project in RStudio or an R session with working directory set to the repository root.
-2. Install or restore the required R packages listed in the environment section below.
-3. Rebuild the cleaned data by running `raw/data-cleansing.Rmd`.
-- This recreates:
-  - `processed/data_mean_cleaned.csv`
-  - `processed/data_min_cleaned.csv`
-  - `processed/data_max_cleaned.csv`
-  - `processed/features/*`
-  - `processed/qa/*`
+1. Double click the Rproj file to open the project in R studio
+2. (optional) if you wish to rebuild the cleaned data by running `data/raw/data-cleansing.Rmd`.
+  - This recreates:
+    - `processed/data_mean_cleaned.csv`
+    - `processed/data_min_cleaned.csv`
+    - `processed/data_max_cleaned.csv`
+3. (Ignore if done previous step) Run `renv::restore()` in the console
 4. Render the technical report from the repository root with:
   
 ```r
@@ -169,8 +160,6 @@ folder.
   - `data_mean_cleaned.csv`
   - `data_min_cleaned.csv`
   - `data_max_cleaned.csv`
-  - `features/*`
-  - `qa/*`
 
 ## No Randomness in Workflow
 
@@ -213,7 +202,6 @@ The project is configured at the repository root with:
   
   - `ST422_Personal_Portfolio.Rproj`
   - `.Rprofile`
-  - `renv/`
   - `renv.lock`
 
 This means the repository root is the project root for reproducibility purposes. 
